@@ -1,0 +1,197 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    color: #10131B;
+    background-color: #F4F6FC;
+    overflow-x: hidden;
+  }
+
+  h1, h2, h3, h4, .font-display {
+    font-family: 'Manrope', -apple-system, BlinkMacSystemFont, sans-serif;
+    font-weight: 700;
+    color: #10131B;
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────
+   STRIPLY DESIGN SYSTEM — PREMIUM GLASSMORPHISM TOKENS
+   Palette: Primary #1454E8 | Off-White #F4F6FC | Light Blue #DCE7FF
+   Near-Black #10131B | Dark Blue #173B70 | Soft Blue #8BAAFF
+───────────────────────────────────────────────────────────── */
+
+/* Translucent Glass Surfaces */
+.glass-surface {
+  background: rgba(255, 255, 255, 0.58);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid #DCE7FF;
+  box-shadow: 0 8px 32px 0 rgba(20, 84, 232, 0.08);
+}
+
+.glass-surface-elevated {
+  background: rgba(255, 255, 255, 0.78);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(220, 231, 255, 0.85);
+  box-shadow: 0 16px 40px -10px rgba(20, 84, 232, 0.12);
+}
+
+.glass-surface-subtle {
+  background: rgba(220, 231, 255, 0.35);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(220, 231, 255, 0.6);
+}
+
+.glass-card-clean {
+  background: #FFFFFF;
+  border: 1px solid #E2E8F0;
+  box-shadow: 0 4px 20px -2px rgba(16, 24, 40, 0.05);
+}
+
+/* Glass Pills & Interactive Chips */
+.glass-pill {
+  background: rgba(255, 255, 255, 0.75);
+  backdrop-filter: blur(12px);
+  border: 1px solid #DCE7FF;
+  color: #173B70;
+  box-shadow: 0 2px 8px rgba(20, 84, 232, 0.05);
+}
+
+.glass-pill:hover {
+  background: #FFFFFF;
+  border-color: #1454E8;
+  color: #1454E8;
+}
+
+.glass-pill-active {
+  background: #1454E8;
+  border-color: #1454E8;
+  color: #FFFFFF;
+  box-shadow: 0 4px 14px rgba(20, 84, 232, 0.25);
+}
+
+/* Inputs & Form Controls */
+.glass-input {
+  background: rgba(255, 255, 255, 0.85);
+  border: 1px solid #DCE7FF;
+  color: #10131B;
+  transition: all 0.2s ease;
+}
+
+.glass-input:focus {
+  background: #FFFFFF;
+  border-color: #1454E8;
+  box-shadow: 0 0 0 3px rgba(20, 84, 232, 0.12);
+  outline: none;
+}
+
+/* Splash Screen Animations */
+@keyframes splashFadeIn {
+  0% {
+    opacity: 0;
+    transform: scale(0.92);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes opticalSweep {
+  0% {
+    left: -30%;
+    opacity: 0;
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    left: 110%;
+    opacity: 0;
+  }
+}
+
+@keyframes pulseGlow {
+  0%, 100% {
+    box-shadow: 0 0 25px rgba(20, 84, 232, 0.2);
+  }
+  50% {
+    box-shadow: 0 0 45px rgba(20, 84, 232, 0.45);
+  }
+}
+
+.animate-splash {
+  animation: splashFadeIn 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-sweep {
+  animation: opticalSweep 2.2s ease-in-out infinite;
+}
+
+.animate-pulse-glow {
+  animation: pulseGlow 3s ease-in-out infinite;
+}
+
+/* Blister Foil Industrial Canvas */
+.foil-canvas-pattern {
+  background-color: #FFFFFF;
+  background-image: 
+    linear-gradient(90deg, rgba(220, 231, 255, 0.6) 1px, transparent 1px),
+    linear-gradient(rgba(220, 231, 255, 0.6) 1px, transparent 1px);
+  background-size: 20px 20px;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   PRINT STYLESHEET — HIGH FIDELITY INDUSTRIAL BLISTER PROOF
+───────────────────────────────────────────────────────────── */
+@media print {
+  /* Hide UI elements, navigation bars, top persistent toolbars, buttons */
+  nav, header, footer, .no-print, button, .portal-switcher {
+    display: none !important;
+  }
+
+  body {
+    background: #FFFFFF !important;
+    color: #000000 !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  /* Force print container to fill page at exact physical dimensions */
+  .printable-artwork-container {
+    display: block !important;
+    width: 100% !important;
+    margin: 0 auto !important;
+    page-break-inside: avoid;
+  }
+
+  .print-page-break {
+    page-break-after: always;
+  }
+}
+
+/* Smooth Scrolling */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #F4F6FC;
+}
+::-webkit-scrollbar-thumb {
+  background: #CBD5E1;
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #94A3B8;
+}
