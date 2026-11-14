@@ -72,3 +72,4 @@
 ### Module D: Database & RLS (`supabase/migrations`)
 - **Tables:** `organizations`, `profiles`, `medicines`, `medicine_batches`, `rp_patterns`, `scans`, `customer_medicines`, `reminders`, `inventory_items`, `audit_logs`.
 - **Database Functions:** `get_fefo_dispatch_queue(pharmacy_id)`, `trg_sync_inventory_expiry()`.
+

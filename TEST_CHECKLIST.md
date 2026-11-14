@@ -8,45 +8,90 @@
 
 | Test Step | Command | Expected Output | Status |
 |---|---|---|---|
-| Frontend TypeScript & Next.js Build | `cmd /c "npm --prefix web run build"` | Route tree rendered, zero type errors, exit code 0 | **VERIFIED (Exit code 0)** |
-| Backend TypeScript Build | `cmd /c "npm --prefix backend run build"` | Output compiled to `dist/`, zero errors | **VERIFIED (Exit code 0)** |
-| Remote Git Sync | `git push origin main` | Pushed cleanly to `Striply-MediScan.git` | **VERIFIED** |
+| Frontend Vite & React SPA Build | `cmd /c "npm --prefix web run build"` | `dist/index.html` bundled (~300 kB), exit code 0 | **VERIFIED (Exit code 0)** |
+| Backend TypeScript Build | `cmd /c "npm --prefix backend run build"` | Output compiled to `dist/`, zero errors, exit code 0 | **VERIFIED (Exit code 0)** |
+| Remote Git Sync | `git push origin main` | Pushed cleanly to `Striply-MediScan.git` | **READY** |
 
 ---
 
-## 2. User Experience & Navigation Flow Checklist
+## 2. Interactive Screen Verification Checklist
 
-- [x] **Animated Splash Screen:**
-  - Displays Striply wordmark and brand logo.
-  - Shows smooth fade-in and scale-up animation.
-  - Animated blue RP Lines recognition optical sweep.
-  - Tagline: *"Smarter Medicine. Safer Tracking."*
-  - Automatically transitions smoothly to Login / Sign Up screen (or instant Skip via button).
-- [x] **Authentication Screen (First Interaction):**
-  - Appears after splash screen (strictly follows sequence: Splash -> Login -> Role Selection).
-  - Has Login and Sign Up switcher tabs.
-  - Form validation for email and password.
-  - Show/hide password toggle works with `Eye` / `EyeOff` icons.
-  - "Forgot password" modal opens and accepts reset request.
-  - Quick Demo fast-track buttons for Customer and Pharmacy.
-- [x] **Role Selection Screen (Post-Auth):**
-  - Displays *"Who are you signing in as?"*
-  - Option A: "I'm a Customer" with descriptive bullet points (Scan RP Lines, Track medicines, Receive expiry alerts).
-  - Option B: "I'm a Pharmacy / Manufacturer" with verification notice.
-- [x] **Customer Mobile Experience (Light Glassmorphic UI):**
-  - 5-tab bottom navigation (Home, My Medicines, Scan, Alerts, Profile) with elevated central Scan button.
-  - Customer Home: greeting *"Good morning Priya Sharma"*, Scan banner, Currently taking cards, Recent scans with status pills (Verified green, Near Expiry amber, Expired red).
-  - My Medicines: 4 tabs (Currently Taking, Upcoming, Completed, Discontinued).
-  - Live Camera Viewfinder: optical alignment frame, glare indicator, flashlight toggle, gallery photo upload, shutter trigger.
-  - Scan Result states: Verified, Near Expiry, Expired, and Unverified. All states feature "Scan Another" and "Save to My Medicines".
-  - Profile screen: notification toggles, WhatsApp alerts, terms, and sign out.
-- [x] **Pharmacy / Manufacturer Experience:**
-  - Overview screen: *"Welcome back Cipla Ltd. (Verified Manufacturer)"*, 4 metric cards, Quick actions, "Needs attention this week" alert.
-  - Inventory screen: search bar, category filters (All, Active, Near Expiry, Critical, Expired), batch summary cards.
-  - Add Stock / New Batch Registration: validated form, editable Excel-style table (Add, Edit, Delete entries), live pattern preview, "Generate Patterns" button.
-  - Foil Artwork Preview: repeat configuration (160mm width, 240mm repeat), zoom controls (Fit, 100%, 150%, 200%), legend of 4 encoded colors, calibration anchor.
-- [x] **New Printing Feature Workflow:**
-  - "Print Artwork" button present on Foil Artwork Preview.
-  - Step 4 Print Settings Modal: foil width (160mm default), repeat length (240mm default), print scale, orientation, copies/repeats, layout preview, anchor and boundaries toggles.
-  - Step 5 Print Preview Modal: exact physical dimensions in mm, margins, eye-marks, registration lines, regulatory batch header, pharmaceutical disclaimer.
-  - Export actions functional: Browser print (`@media print`), PDF download, SVG export.
+- [x] **1. Welcome Screen (`Welcome`):**
+  - Mascot logo with orange pill and cartoon eyes inside corner alignment brackets.
+  - Interactive Terms & Conditions checkbox.
+  - Interactive Privacy Policy checkbox.
+  - "Continue" button blocked with toast until both terms are checked.
+- [x] **2. Role Selection Screen (`Role`):**
+  - "Who are you signing in as?"
+  - Option A: "I'm a Customer" (Scan RP Lines on your medicine, track doses).
+  - Option B: "I'm a Pharmacy / Manufacturer" (Register batches, generate patterns).
+  - Verification badge notice at bottom.
+- [x] **3. Sign Up Screen (`Signup`):**
+  - "Continue with Google" triggers sign-in toast and transitions to authenticated view.
+  - "Continue with Apple" triggers sign-in toast and transitions to authenticated view.
+  - "Sign up with Email" navigates to email login flow.
+- [x] **4. Login Screen (`Login`):**
+  - Controlled Email and Password inputs.
+  - Password visibility toggle (`Eye` / `EyeOff`).
+  - "Forgot password?" triggers reset link toast.
+  - Google and Apple round OAuth buttons.
+  - Submit form validates non-empty inputs and navigates to role home.
+- [x] **5. Customer Home Screen (`HomeScreen`):**
+  - Greeting "Good morning, Priya Sharma".
+  - Notification bell and profile icons in top row.
+  - Deep Navy hero tile: "Scan a medicine — With calibration and verification" with camera icon.
+  - Quick dose check-in button ("Metformin 500 — Scheduled for 08:00 AM") with toggleable "✓ Taken" chip.
+  - Currently taking section with status chips ("Paracetamol 650", "Metformin 500").
+  - Recent scans with status chips: Verified (green), Near Expiry (amber), Expired (red).
+- [x] **6. Scanner Viewfinder Screen (`Scan`):**
+  - Dark HUD with back button, flashlight toggle (lighting up and toast confirmation).
+  - Optical scanning reticle with animated laser scanline.
+  - Center blister illustration with RP Lines pattern.
+  - Gallery button triggers file upload dialog for local images.
+  - Center Shutter button triggers decoding spinner and transitions to Result.
+  - Pencil button opens Manual Batch Code Fallback dialog.
+- [x] **7. Scan Result Screen (`Result`):**
+  - Green circular glow with checkmark: "Verified Authentic".
+  - Medicine details: Paracetamol 650, Batch B204-P-12, Mfg/Exp dates, Cipla Ltd.
+  - "Save to My Medicines" button adds medication and navigates to Medicines tab.
+  - "Scan Another Medicine" button returns to scanner.
+- [x] **8. My Medicines Screen (`Medicines`):**
+  - Segmented tabs: Currently Taking, Upcoming, Completed.
+  - Medicine cards with dosage schedules and status badges.
+- [x] **9. Pharmacy Inventory Screen (`Inventory`):**
+  - Real-time search bar filtering across all batches and medicine names.
+  - Category tabs: All, Active, Near expiry, Recalled, Expired.
+  - Stock summary cards: 12,200 Total units, 22 Days median shelf life.
+  - Interactive batch cards navigating to Foil preview.
+- [x] **10. New Batch Entry Form (`NewBatch`):**
+  - Validated input fields: Medicine name, Strength, Manufacturer, Batch number, Mfg date, Exp date, Quantity, Unit.
+  - Inline error highlights ("Required") if mandatory fields are missing.
+  - Real-time RP Lines pattern preview box updating with color dots.
+  - "Add entry" saves to inventory and backend API `/api/v1/batches/register`.
+- [x] **11. Foil Artwork Preview Screen (`Foil`):**
+  - Visualizer showing 2x5 blister pocket matrix with RP Lines on each pocket.
+  - Repeat configuration controls: Foil width (120mm, 150mm, 180mm), Height (60mm, 70mm, 90mm).
+  - Zoom controls: Fit, 100%, 200%.
+  - 4-color legend with calibration dot.
+  - **Export artwork** button downloads real vector SVG `striply-foil-[batch].svg`.
+- [x] **12. Organization Overview (`Org`):**
+  - Header: "Cipla Ltd. Verified Manufacturer".
+  - Metric cards: 4 Registered batches, 4 Active patterns, 1 Near expiry, 1 Recalled.
+  - Quick action tiles: Register new batch, Browse batch records, Inventory & recalls.
+  - Recall alert card: "Needs attention this week: Pantocid 40".
+- [x] **13. Preferences Screen (`Preferences`):**
+  - Toggles for Push notifications, Expiry alerts, Offline calibration cache.
+  - Cloud sync timestamp indicator.
+- [x] **14. Alerts Screen (`Alerts`):**
+  - Filter tabs: All, At Risk, Notes.
+  - Alerts for Near Expiry, Expired medicine, Batch Recall notice, Dose reminder.
+- [x] **15. Profile Screen (`Profile`):**
+  - Avatar initials ("PS" or "CL"), role badge.
+  - Links to My Organization, Preferences, Help & Support.
+  - Dev tools launcher button opening the Dev Panel modal drawer.
+  - Sign out button returning to Welcome screen.
+- [x] **16. Dev Panel Drawer (Screen 7 in Image 3):**
+  - Reload application.
+  - Jump to customer home / manufacturer overview.
+  - Toggle 60fps performance monitor HUD.
+  - Toggle slow network simulation.

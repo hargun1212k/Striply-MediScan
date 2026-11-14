@@ -40,3 +40,4 @@
 1. **No External Network Dependencies for Core Logic:** The core 4-channel pattern rendering and vector layout engine must work offline and client-side without crashing if the backend is unreachable.
 2. **Idempotent Database Migrations:** All SQL scripts must use `IF EXISTS` / `IF NOT EXISTS` constructs so they can be run repeatedly without failure.
 3. **Type Safety:** Next.js and TypeScript builds must compile with zero errors (`npm run build`).
+
