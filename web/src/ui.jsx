@@ -56,8 +56,11 @@ export const Back = ({ onClick }) => (
   <button className="back" onClick={onClick} aria-label="Back"><ChevronLeft size={24} strokeWidth={2.4} /></button>
 )
 
+/* 2-Step Progress Indicator (Requirement 2.C: Role Selection -> Create Account) */
 export const Steps = ({ at = 0 }) => (
-  <div className="steps">{[0, 1, 2].map(i => <i key={i} className={i === at ? 'on' : ''} />)}</div>
+  <div className="steps-two" aria-label={`Step ${at + 1} of 2`}>
+    {[0, 1].map(i => <i key={i} className={i === at ? 'on' : ''} />)}
+  </div>
 )
 
 /* Pill icon */
@@ -94,8 +97,8 @@ export function CustomerNav({ active, go, labels = true }) {
     <div className={'nav' + (labels ? ' lab' : '')}>
       {items.map(([k, Icon, text]) =>
         k === 'scan' ? (
-          <button key={k} className="center" onClick={() => go('scan')} aria-label="Scan">
-            <ScanLine size={26} strokeWidth={2.2} />
+          <button key={k} className="center" onClick={() => go('scan')} aria-label="Scan Medicine">
+            <ScanLine size={24} strokeWidth={2.4} />
           </button>
         ) : (
           <button key={k} className={'item' + (active === k ? ' on' : '') + (labels ? '' : ' dotted')} onClick={() => go(k, true)}>
@@ -127,28 +130,37 @@ export function PharmaNav({ active, go }) {
   )
 }
 
-/* ---------------- Dot patterns (RP Lines) ---------------- */
-const COLS = ['#E5322D', '#3FA34D', '#F28C1E', '#F4C20D']
-const SHADES = {
-  '#E5322D': ['#E5322D', '#F0605A'],
-  '#3FA34D': ['#3FA34D', '#6CC079'],
-  '#F28C1E': ['#F28C1E', '#F7A94F'],
-  '#F4C20D': ['#F4C20D', '#F8D95A'],
+/* ---------------- Five-Colour Medicine Pattern System (Requirement 6) ---------------- */
+/* 
+  🔴 Red    -> Medicine Name
+  🔵 Blue   -> Medicine ID / Unique Medicine Identification
+  🟢 Green  -> Manufacturing Date
+  🟡 Yellow -> Expiry Date
+  🟣 Purple -> Manufacturer Information / Identity
+*/
+const FIVE_COLS = ['#E5322D', '#2563EB', '#16A34A', '#EAB308', '#9333EA']
+const FIVE_SHADES = {
+  '#E5322D': ['#E5322D', '#F87171'],
+  '#2563EB': ['#2563EB', '#60A5FA'],
+  '#16A34A': ['#16A34A', '#4ADE80'],
+  '#EAB308': ['#EAB308', '#FDE047'],
+  '#9333EA': ['#9333EA', '#C084FC'],
 }
+
 function rnd(seed) { let s = seed; return () => (s = (s * 9301 + 49297) % 233280) / 233280 }
 
-export function PatternDots({ x = 0, y = 0, seed = 1, rows = 7, gap = 9, r = 3, withAnchor = true }) {
+export function PatternDots({ x = 0, y = 0, seed = 1, rows = 6, gap = 10, r = 3, withAnchor = true }) {
   const R = rnd(seed)
   const els = []
-  COLS.forEach((c, ci) => {
+  FIVE_COLS.forEach((c, ci) => {
     for (let ri = 0; ri < rows; ri++) {
-      const shade = SHADES[c][R() > 0.5 ? 1 : 0]
+      const shade = FIVE_SHADES[c][R() > 0.5 ? 1 : 0]
       els.push(<circle key={ci + '-' + ri} cx={x + ci * gap} cy={y + ri * gap} r={r} fill={shade} />)
     }
   })
   if (withAnchor) {
-    for (let i = 0; i < 4; i++) {
-      els.push(<circle key={'a' + i} cx={x + i * gap} cy={y + rows * gap + 4} r={r} fill={i % 2 ? '#3B4FD0' : '#2430A8'} />)
+    for (let i = 0; i < 5; i++) {
+      els.push(<circle key={'a' + i} cx={x + i * gap} cy={y + rows * gap + 4} r={r} fill="#102A43" />)
     }
   }
   return <g>{els}</g>
@@ -156,34 +168,33 @@ export function PatternDots({ x = 0, y = 0, seed = 1, rows = 7, gap = 9, r = 3, 
 
 export function FoilThumb({ seeds = [3, 7, 11, 5] }) {
   return (
-    <svg viewBox="0 0 270 100" width="100%" style={{ display: 'block' }}>
+    <svg viewBox="0 0 280 95" width="100%" style={{ display: 'block' }}>
       {seeds.map((s, i) => (
-        <PatternDots key={i} x={22 + i * 66} y={8} seed={s} rows={7} gap={9} r={3.2} />
+        <PatternDots key={i} x={18 + i * 68} y={8} seed={s} rows={6} gap={9} r={3} />
       ))}
     </svg>
   )
 }
 
-/* Realistic Blister strip with RP lines */
+/* Realistic Blister strip with 5-color verification pattern */
 export function Blister() {
   return (
-    <svg viewBox="0 0 220 150" width="232" style={{ transform: 'rotate(-5deg)', filter: 'drop-shadow(0 10px 14px rgba(0,0,0,.45))' }}>
+    <svg viewBox="0 0 240 150" width="248" style={{ transform: 'rotate(-4deg)', filter: 'drop-shadow(0 10px 16px rgba(0,0,0,.45))' }}>
       <defs>
         <linearGradient id="foil" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0" stopColor="#d9dadf" />
-          <stop offset=".5" stopColor="#a9abb4" />
+          <stop offset="0" stopColor="#dcdde2" />
+          <stop offset=".5" stopColor="#adb0b8" />
           <stop offset="1" stopColor="#c8cad0" />
         </linearGradient>
       </defs>
-      <rect x="4" y="4" width="212" height="142" rx="14" fill="url(#foil)" />
-      <rect x="4" y="4" width="212" height="142" rx="14" fill="none" stroke="rgba(255,255,255,.6)" />
+      <rect x="4" y="4" width="232" height="142" rx="14" fill="url(#foil)" />
+      <rect x="4" y="4" width="232" height="142" rx="14" fill="none" stroke="rgba(255,255,255,.6)" />
       {[0, 1, 2].map(i => (
         <g key={i}>
-          <rect x={16 + i * 66} y="14" width="56" height="122" rx="14" fill="rgba(255,255,255,.18)" stroke="rgba(255,255,255,.4)" />
-          <PatternDots x={28 + i * 66} y={28} seed={i * 5 + 2} rows={7} gap={9} r={3.2} />
+          <rect x={14 + i * 74} y="14" width="62" height="122" rx="14" fill="rgba(255,255,255,.18)" stroke="rgba(255,255,255,.4)" />
+          <PatternDots x={22 + i * 74} y={24} seed={i * 5 + 3} rows={6} gap={9} r={3} />
         </g>
       ))}
     </svg>
   )
 }
-

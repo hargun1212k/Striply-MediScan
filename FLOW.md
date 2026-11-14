@@ -1,66 +1,76 @@
 # Striply — Application Navigation & Screen Flow (FLOW.md)
 
-> **Complete Screen Hierarchy & User Flow**
+> **Updated Screen Flow & Architecture (5-Colour System & Business Verification)**
 
 ---
 
 ```mermaid
 graph TD
-  Welcome["1. Welcome Screen<br/>(Logo, Mascot, Terms & Privacy Check)"] -->|Continue| Role["2. Role Selection<br/>(Customer vs Pharmacy/Manufacturer)"]
+  Welcome["1. Welcome to Striply<br/>(Mascot, Terms & Privacy Agreement)"] -->|Continue| Role["2. Who are you signing in as?<br/>(2-Step: Step 1 Role Selection)"]
 
-  Role -->|I'm a Customer| SignupCust["3. Sign Up<br/>(Google / Apple / Email)"]
-  Role -->|I'm a Pharmacy / Manufacturer| SignupPharma["3. Sign Up<br/>(Google / Apple / Email)"]
+  Role -->|I'm a Customer| CustSignup["3. Create Account (Customer)<br/>(Step 2 of 2: Google, Apple, Email Autocomplete)"]
+  Role -->|I'm a Pharmacy / Manufacturer| PharmaSignup["3. Create Account (Manufacturer)<br/>(Step 2 of 2: Google, Apple, Email Autocomplete)"]
 
-  SignupCust -->|Sign In Link| LoginCust["4. Login<br/>(Email + Password + OAuth)"]
-  SignupPharma -->|Sign In Link| LoginPharma["4. Login<br/>(Email + Password + OAuth)"]
+  CustSignup -->|Already have account? Login| CustLogin["4. Customer Login<br/>(Email + Password + OAuth)"]
+  PharmaSignup -->|Already have account? Login| PharmaLogin["4. Manufacturer Login<br/>(Email + Password + OAuth)"]
 
-  SignupCust -->|Authenticate| CustHome["5. Customer Home<br/>(Hero Scan, Dose Check-in, Recent Scans)"]
-  LoginCust -->|Authenticate| CustHome
+  CustSignup -->|Auth Success| CustHome["5. Customer Home<br/>(Black Scan Button, Dose Check-in, Recent Scans)"]
+  CustLogin -->|Auth Success| CustHome
 
-  SignupPharma -->|Authenticate| PharmaOrg["12. Manufacturer Overview<br/>(Activity Stats, Quick Actions, Recall Alert)"]
-  LoginPharma -->|Authenticate| PharmaOrg
+  PharmaSignup -->|Auth Success| BizVerify["13. Business Verification<br/>(Company info, Licence #, PDF Document Upload)"]
+  PharmaLogin -->|Auth Success| VerifyStatus["14. Verification Status<br/>(Timeline: Pending / Under Review / Verified)"]
+  BizVerify -->|Submit Request| VerifyStatus
+  VerifyStatus -->|Approved / Full Access| PharmaOrg["12. Manufacturer Dashboard<br/>(Alert Your Changes, Batches, Inventory)"]
 
   subgraph CustomerExperience["Customer Experience"]
-    CustHome -->|Scan Banner / Center Nav| Scanner["6. Scanner Viewfinder<br/>(Alignment Box, Flash, Gallery, Manual Fallback)"]
-    Scanner -->|Shutter / File| ResultScreen["7. Scan Result<br/>(Verified Authentic, Batch, Mfg/Exp)"]
-    ResultScreen -->|Save to My Meds| MedsScreen["8. My Medicines<br/>(Currently Taking, Upcoming, Completed)"]
+    CustHome -->|Black Scan Hero / Nav| Scanner["6. Pattern Scanner<br/>(Viewfinder, Laser Scanline, Flash, Gallery, Manual)"]
+    Scanner -->|Shutter / File| ResultScreen["7. Verification Result<br/>(Five-Colour Decoding System Explanation)"]
+    ResultScreen -->|Save to Meds| MedsScreen["8. My Medicines<br/>(Currently Taking, Upcoming, Completed)"]
     CustHome -->|Nav / See All| MedsScreen
-    CustHome -->|Nav| CustAlerts["14. Alerts<br/>(Near Expiry, Recall, Dose Reminders)"]
-    CustHome -->|Nav| CustProfile["15. Profile & Settings<br/>(Avatar, Preferences, Dev Tools, Sign Out)"]
-    CustProfile -->|Preferences| PrefsScreen["13. Preferences<br/>(Push, Expiry, Offline Cache Toggles)"]
+    CustHome -->|Nav| CustAlerts["17. Alerts<br/>(Near Expiry, Recall, Dose Reminders)"]
+    CustHome -->|Nav| CustProfile["16. Profile Hub<br/>(Edit Profile, Preferences, Help, Terms, Sign Out)"]
+    CustProfile -->|Edit Profile| EditProf["15A. Edit Profile"]
+    CustProfile -->|Preferences| Prefs["15B. Preferences"]
+    CustProfile -->|Help & Support| HelpSupp["15C. Help & Support"]
+    CustProfile -->|Terms & Privacy| TermsPriv["15D. Terms & Privacy"]
   end
 
   subgraph PharmacyExperience["Pharmacy & Manufacturer Experience"]
-    PharmaOrg -->|Nav / Browse| InventoryScreen["9. Inventory<br/>(Search, Filter Tabs, Stock Cards)"]
-    PharmaOrg -->|Nav / Register| NewBatchScreen["10. New Batch Entry<br/>(Validated Form, RP Pattern Preview)"]
+    PharmaOrg -->|Nav / Stock| InventoryScreen["9. Inventory<br/>(Search, Filter Tabs, Stock Cards)"]
+    PharmaOrg -->|Nav / Register| NewBatchScreen["10. New Batch Entry<br/>(Gated to Verified, 5-Color Pattern Preview)"]
     NewBatchScreen -->|Add Entry| FoilScreen["11. Foil Artwork Preview<br/>(2x5 Blister Grid, Config, SVG Export)"]
     InventoryScreen -->|Click Batch| FoilScreen
-    PharmaOrg -->|Nav| PharmaAlerts["14. Alerts / Records<br/>(Near Expiry, Expired, Recalls)"]
-    PharmaOrg -->|Settings| CustProfile
+    PharmaOrg -->|Alert Your Changes| AlertModal["Broadcast Regulatory / Licence Changes"]
+    PharmaOrg -->|Nav| PharmaAlerts["17. Alerts & Recalls"]
   end
 
-  CustProfile -->|Sign Out| Welcome
-  PharmaOrg -->|Sign Out| Welcome
+  CustProfile -->|Sign Out| SignOutLoading["Signing Out Animation"] -->|Redirect| Role
+  PharmaOrg -->|Sign Out| SignOutLoading -->|Redirect| Role
 ```
 
 ---
 
-## Screen Transition Matrix
+## Screen Directory & Handlers
 
-| # | Screen Name | Route / Key | Primary Actions & Handlers | Back Destination |
-|---|---|---|---|---|
-| 1 | Welcome | `'welcome'` | Check T&C, Check Privacy, `Continue -> Role` | None (Root) |
-| 2 | Role Selection | `'role'` | Select Customer, Select Pharmacy -> `Signup` | `Welcome` |
-| 3 | Sign Up | `'signup'` | Continue with Google, Continue with Apple, Email -> `Login` | `Role` |
-| 4 | Log In | `'login'` | Email/Password entry, show/hide password, Forgot password, Google/Apple OAuth -> Finish to Role Home | `Signup` / `Role` |
-| 5 | Customer Home | `'home'` | Scan medicine hero, Dose check-in, Recent scans, Customer Nav | Exit |
-| 6 | Scanner HUD | `'scan'` | Viewfinder, Flash toggle, Gallery file upload, Shutter capture, Manual batch code modal -> `Result` | `Home` |
-| 7 | Scan Result | `'result'` | Save to My Medicines -> `Medicines`, Scan Another -> `Scan` | `Scan` |
-| 8 | My Medicines | `'medicines'` | Tabs (Currently Taking, Upcoming, Completed), View detail | `Home` |
-| 9 | Inventory | `'inventory'` | Real-time search, Filter tabs, Select batch -> `Foil` | `Org` |
-| 10 | New Batch Entry | `'batch'` | Form validation, Date pickers, RP Lines pattern preview, Add entry -> `Foil` | `Inventory` |
-| 11 | Foil Artwork Preview | `'foil'` | Blister 2x5 grid, Foil width & repeat controls, Zoom (Fit/100%/200%), Export SVG artwork -> Download file | `NewBatch` / `Inventory` |
-| 12 | Organization Overview | `'org'` | Metric cards, Quick action tiles, Recall alert, Pharma Nav | Exit |
-| 13 | Preferences | `'prefs'` | Notification toggles, Expiry alerts toggle, Offline cache toggle | `Profile` |
-| 14 | Alerts | `'alerts'` | Tabs (All, At Risk, Notes), Alert cards | Prior tab |
-| 15 | Profile | `'profile'` | Account stats, Preferences link, Dev tools drawer launcher, Sign out | Prior tab |
+| Key | Screen Title | Navigation & Trigger | Destination / Actions |
+|---|---|---|---|
+| `'welcome'` | Welcome to Striply | Initial app open | Check T&C & Privacy -> `'role'` |
+| `'role'` | Who are you signing in as? | Continue from Welcome / Post Sign-out | Customer or Manufacturer -> `'signup'` |
+| `'signup'` | Create your account | Step 2 of 2 indicator | Google/Apple Modal, Email autocomplete, Submit -> Customer Home or Business Verification |
+| `'login'` | Log in to Striply | From Signup link | OAuth or Email/Password -> Customer Home or Status |
+| `'home'` | Customer Home | Primary hub | Black scan button -> `'scan'`, Dose toggle, Recent scans |
+| `'scan'` | Scan Verification Pattern | Dark optical HUD | Flash toggle, Gallery file upload, Shutter capture, Manual fallback -> `'result'` |
+| `'result'` | Verification Result | Decoded result | 5-colour encoding cards (Red, Blue, Green, Yellow, Purple), Save to cabinet |
+| `'medicines'` | My Medicines | Nav item | Tabs: Currently Taking, Upcoming, Completed |
+| `'inventory'` | Inventory | Pharma Nav | Real-time search, category filters, batch cards -> `'foil'` |
+| `'batch'` | New Batch Entry | Pharma Nav | Validated inputs, 5-color live pattern generator -> `'foil'` |
+| `'foil'` | Foil Artwork Preview | From Batch/Inventory | 2x5 blister layout, repeat configuration, Export SVG download |
+| `'org'` | Manufacturer Overview | Pharma Home | Metric tiles, "Alert Your Changes" broadcasting modal, Quick actions |
+| `'business-verify'` | Business Verification | Manufacturer Onboarding | Company details, Drug licence #, PDF licence file upload |
+| `'verify-status'` | Verification Status | Post-verification | Timeline (Pending, Under Review, Verified), Evaluator demo toggle |
+| `'edit-profile'` | Edit Profile | Profile link | Full Name, Email, Phone, Avatar change & save |
+| `'prefs'` | Preferences | Profile link | Push, Expiry alerts, Offline cache, Audio chimes |
+| `'help-support'` | Help & Support | Profile link | FAQs, Support Email, 24/7 Helpline |
+| `'terms-privacy'` | Terms & Privacy | Profile link | Terms of Service, Medical & Traceability Disclaimer |
+| `'alerts'` | Alerts | Nav item | All, At Risk, Notes tabs |
+| `'profile'` | My Profile Hub | Nav item | User info, Links to 4 sub-screens, Sign out -> `'role'` |

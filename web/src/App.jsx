@@ -1,9 +1,10 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react'
 import {
   Welcome, Role, Signup, Login, HomeScreen, Scan, Result, Medicines, Inventory,
-  NewBatch, Foil, Org, Preferences, Alerts, Profile
+  NewBatch, Foil, Org, Preferences, Alerts, Profile, BusinessVerify, VerifyStatus,
+  EditProfile, HelpSupport, TermsPrivacy, GoogleAccountModal, AppleAccountModal
 } from './screens.jsx'
-import { RefreshCw, Home, Terminal, Activity, Eye, Wifi, X } from 'lucide-react'
+import { RefreshCw, Home, Terminal, Activity, Wifi, X } from 'lucide-react'
 
 const INITIAL_INV = [
   { name: 'Metformin 500', batch: 'MF-0012', qty: '10,000 tablets', s: 'green' },
@@ -14,23 +15,35 @@ const INITIAL_INV = [
 ]
 
 export default function App() {
+  // Navigation stack: initial open is strictly 'welcome' (Requirement 2.A)
   const [stack, setStack] = useState(['welcome'])
   const [role, setRole] = useState('customer')
+  const [userName, setUserName] = useState('Priya Sharma')
+  const [userEmail, setUserEmail] = useState('priya.sharma@gmail.com')
+  const [verificationStatus, setVerificationStatus] = useState('Pending')
   const [inv, setInv] = useState(INITIAL_INV)
   const [toastMsg, setToastMsg] = useState('')
+  const [googleModal, setGoogleModal] = useState(false)
+  const [appleModal, setAppleModal] = useState(false)
+  const [signingOut, setSigningOut] = useState(false)
   const [devOpen, setDevOpen] = useState(false)
   const [perfMon, setPerfMon] = useState(false)
-  const [fakeNet, setFakeNet] = useState(false)
   const timer = useRef()
 
-  const native = typeof navigator !== 'undefined' && /Android|iPhone|iPad|iPod/i.test(navigator.userAgent) && window.innerWidth <= 480
-  const [scale, setScale] = useState(1)
-
+  // Load session from localStorage on startup
   useEffect(() => {
-    const handleResize = () => setScale(Math.min(1, (window.innerWidth - 24) / 406, (window.innerHeight - 24) / 880))
-    handleResize()
-    window.addEventListener('resize', handleResize)
-    return () => window.removeEventListener('resize', handleResize)
+    try {
+      const savedUser = localStorage.getItem('striply_user')
+      if (savedUser) {
+        const u = JSON.parse(savedUser)
+        if (u.name) setUserName(u.name)
+        if (u.email) setUserEmail(u.email)
+        if (u.role) setRole(u.role)
+        if (u.verificationStatus) setVerificationStatus(u.verificationStatus)
+      }
+    } catch {
+      // ignore
+    }
   }, [])
 
   const [form, setForm] = useState({
@@ -47,7 +60,7 @@ export default function App() {
   const toast = useCallback(m => {
     setToastMsg(m)
     clearTimeout(timer.current)
-    timer.current = setTimeout(() => setToastMsg(''), 2200)
+    timer.current = setTimeout(() => setToastMsg(''), 2400)
   }, [])
 
   const go = useCallback((name, replaceAll, replaceTop, reset) => {
@@ -61,9 +74,185 @@ export default function App() {
   }, [])
 
   const back = useCallback(() => setStack(s => (s.length > 1 ? s.slice(0, -1) : s)), [])
-  const finish = () => setStack([role === 'pharmacy' ? 'org' : 'home'])
 
-  // Add entry to inventory and send to backend API
+  // ============ Google OAuth Handler (Requirement 2.D & 4.A) ============
+  const handleGoogleSelect = async (account) => {
+    setGoogleModal(false)
+    const activeRole = role
+    const chosenName = account.name || (activeRole === 'pharmacy' ? 'Cipla Ltd.' : 'Priya Sharma')
+    setUserName(chosenName)
+    setUserEmail(account.email)
+
+    try {
+      const res = await fetch('/api/v1/auth/google', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: account.email,
+          name: chosenName,
+          role: activeRole,
+          avatar: account.avatar
+        })
+      })
+      const data = await res.json()
+      if (data.user?.verificationStatus) {
+        setVerificationStatus(data.user.verificationStatus)
+      }
+      localStorage.setItem('striply_user', JSON.stringify({
+        email: account.email,
+        name: chosenName,
+        role: activeRole,
+        verificationStatus: data.user?.verificationStatus || (activeRole === 'pharmacy' ? 'Pending' : 'Verified')
+      }))
+    } catch {
+      // offline fallback
+      if (activeRole === 'pharmacy') setVerificationStatus('Pending')
+    }
+
+    toast(`Signed in with Google as ${chosenName}`)
+
+    // Routing: Customer -> home; Manufacturer -> business-verify (NO BLANK SCREEN!)
+    if (activeRole === 'pharmacy') {
+      go('business-verify', true)
+    } else {
+      go('home', true)
+    }
+  }
+
+  // ============ Apple OAuth Handler ============
+  const handleAppleSelect = async (account) => {
+    setAppleModal(false)
+    const activeRole = role
+    const chosenName = activeRole === 'pharmacy' ? 'Cipla Ltd.' : 'Apple User'
+    setUserName(chosenName)
+    setUserEmail(account.email)
+
+    try {
+      await fetch('/api/v1/auth/apple', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: account.email, name: chosenName, role: activeRole })
+      })
+    } catch {
+      // offline fallback
+    }
+
+    toast(`Signed in with Apple as ${chosenName}`)
+    if (activeRole === 'pharmacy') {
+      go('business-verify', true)
+    } else {
+      go('home', true)
+    }
+  }
+
+  // ============ Email Sign Up Handler ============
+  const handleEmailSignup = async ({ name, email, password }) => {
+    const activeRole = role
+    setUserName(name)
+    setUserEmail(email)
+
+    try {
+      const res = await fetch('/api/v1/auth/signup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, email, password, role: activeRole })
+      })
+      const data = await res.json()
+      if (!res.ok) {
+        toast(data.error || 'Signup failed')
+        return
+      }
+      localStorage.setItem('striply_user', JSON.stringify({
+        email,
+        name,
+        role: activeRole,
+        verificationStatus: activeRole === 'pharmacy' ? 'Pending' : 'Verified'
+      }))
+    } catch {
+      // offline fallback
+    }
+
+    toast(`Account created for ${name}!`)
+    if (activeRole === 'pharmacy') {
+      go('business-verify', true)
+    } else {
+      go('home', true)
+    }
+  }
+
+  // ============ Email Login Handler ============
+  const handleEmailLogin = async ({ email, password }) => {
+    const activeRole = role
+    const derivedName = email.split('@')[0]
+    setUserName(derivedName)
+    setUserEmail(email)
+
+    try {
+      const res = await fetch('/api/v1/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password, role: activeRole })
+      })
+      const data = await res.json()
+      if (!res.ok) {
+        toast(data.error || 'Login failed')
+        return
+      }
+      if (data.user?.verificationStatus) {
+        setVerificationStatus(data.user.verificationStatus)
+      }
+      localStorage.setItem('striply_user', JSON.stringify({
+        email,
+        name: data.user?.name || derivedName,
+        role: activeRole,
+        verificationStatus: data.user?.verificationStatus || 'Verified'
+      }))
+    } catch {
+      // offline fallback
+    }
+
+    toast(`Welcome back, ${derivedName}!`)
+    if (activeRole === 'pharmacy') {
+      go(verificationStatus === 'Verified' ? 'org' : 'verify-status', true)
+    } else {
+      go('home', true)
+    }
+  }
+
+  // ============ Sign-Out Handler (Requirement 2.G) ============
+  const handleSignOut = () => {
+    setSigningOut(true)
+    try {
+      localStorage.removeItem('striply_user')
+      fetch('/api/v1/auth/logout', { method: 'POST' }).catch(() => {})
+    } catch {
+      // ignore
+    }
+
+    setTimeout(() => {
+      setSigningOut(false)
+      toast('Signed out successfully')
+      // Redirect to second screen "Who are you signing in as?", NOT Welcome (Requirement 2.G)
+      setStack(['role'])
+    }, 600)
+  }
+
+  // ============ Manufacturer Verification Submission ============
+  const handleVerificationSubmitted = async (details) => {
+    setVerificationStatus('Under Review')
+    setUserName(details.businessName)
+    try {
+      await fetch('/api/v1/manufacturer/verify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(details)
+      })
+    } catch {
+      // offline fallback
+    }
+  }
+
+  // Add new batch entry to inventory and backend API
   const addEntry = async () => {
     const batch = form.batch.trim() || 'NEW-001'
     const newEntry = {
@@ -74,7 +263,6 @@ export default function App() {
     }
     setInv(i => [newEntry, ...i.filter(x => x.batch !== batch)])
 
-    // Try posting to backend if reachable
     try {
       await fetch('/api/v1/batches/register', {
         method: 'POST',
@@ -91,19 +279,34 @@ export default function App() {
         })
       })
     } catch {
-      // Graceful offline fallback
+      // offline fallback
     }
   }
 
-  const user = role === 'pharmacy' ? 'Cipla Ltd.' : 'Priya Sharma'
   const cur = stack[stack.length - 1]
-  const p = { go, back, role, user, toast, onOpenDev: () => setDevOpen(true) }
+  const userDisplayName = role === 'pharmacy' ? (userName === 'Priya Sharma' ? 'Cipla Ltd.' : userName) : userName
+
+  const p = {
+    go,
+    back,
+    role,
+    user: userDisplayName,
+    userEmail,
+    verificationStatus,
+    toast,
+    onSignOut: handleSignOut,
+    onGoogleOAuth: () => setGoogleModal(true),
+    onAppleOAuth: () => setAppleModal(true),
+    onEmailSignup: handleEmailSignup,
+    onEmailLogin: handleEmailLogin,
+    onOpenDev: () => setDevOpen(true)
+  }
 
   const screens = {
     welcome: <Welcome {...p} />,
     role: <Role {...p} setRole={setRole} />,
-    signup: <Signup {...p} finish={finish} />,
-    login: <Login {...p} finish={finish} />,
+    signup: <Signup {...p} />,
+    login: <Login {...p} />,
     home: <HomeScreen {...p} />,
     scan: <Scan {...p} />,
     result: <Result {...p} />,
@@ -112,25 +315,57 @@ export default function App() {
     batch: <NewBatch {...p} form={form} setForm={setForm} addEntry={addEntry} />,
     foil: <Foil {...p} form={form} toast={toast} />,
     org: <Org {...p} />,
+    'business-verify': <BusinessVerify {...p} onVerificationSubmitted={handleVerificationSubmitted} />,
+    'verify-status': <VerifyStatus {...p} status={verificationStatus} onToggleDemoStatus={setVerificationStatus} />,
+    'edit-profile': <EditProfile {...p} onSave={setUserName} />,
     prefs: <Preferences {...p} />,
-    alerts: <Alerts {...p} />,
+    'help-support': <HelpSupport {...p} />,
+    'terms-privacy': <TermsPrivacy {...p} />,
     profile: <Profile {...p} />,
+    alerts: <Alerts {...p} />,
   }
 
   return (
-    <div className={'phone' + (native ? ' native' : '')} style={native ? undefined : { '--s': scale }}>
+    <div className="app-canvas">
       <div key={cur} style={{ position: 'absolute', inset: 0 }}>
         {screens[cur] || screens.welcome}
       </div>
 
-      {/* Performance monitor overlay */}
-      {perfMon && (
-        <div style={{ position: 'absolute', top: 50, left: 16, background: 'rgba(0,0,0,0.85)', color: '#00FF66', fontSize: 10, padding: '4px 8px', borderRadius: 8, zIndex: 99, fontFamily: 'monospace' }}>
-          FPS: 60 | Memory: 24MB | Ping: {fakeNet ? '240ms' : '14ms'}
+      {/* Google Account Selector Dialog (Requirement 2.D) */}
+      {googleModal && (
+        <GoogleAccountModal
+          role={role}
+          onClose={() => setGoogleModal(false)}
+          onSelectAccount={handleGoogleSelect}
+        />
+      )}
+
+      {/* Apple Account Selector Dialog */}
+      {appleModal && (
+        <AppleAccountModal
+          onClose={() => setAppleModal(false)}
+          onSelectAccount={handleAppleSelect}
+        />
+      )}
+
+      {/* Signing Out Animated Overlay (Requirement 2.G) */}
+      {signingOut && (
+        <div className="drawer-backdrop" style={{ alignItems: 'center', justifyContent: 'center' }}>
+          <div style={{ textAlign: 'center', color: '#fff' }}>
+            <div className="spin" style={{ margin: '0 auto 14px' }} />
+            <div style={{ fontSize: 16, fontWeight: 700 }}>Signing out securely…</div>
+          </div>
         </div>
       )}
 
-      {/* Dev Panel Modal Drawer (matching Image 3 Screen 7) */}
+      {/* Performance monitor overlay */}
+      {perfMon && (
+        <div style={{ position: 'absolute', top: 50, left: 16, background: 'rgba(0,0,0,0.85)', color: '#00FF66', fontSize: 10, padding: '4px 8px', borderRadius: 8, zIndex: 99, fontFamily: 'monospace' }}>
+          FPS: 60 | Memory: 24MB | Latency: 12ms
+        </div>
+      )}
+
+      {/* Dev Panel Modal Drawer */}
       {devOpen && (
         <div className="drawer-backdrop" onClick={() => setDevOpen(false)}>
           <div className="drawer-content" onClick={e => e.stopPropagation()}>
@@ -172,25 +407,21 @@ export default function App() {
               <button
                 className="btn light sm"
                 onClick={() => {
+                  setDevOpen(false)
+                  go('verify-status')
+                }}
+              >
+                <Terminal size={16} /> Manufacturer verification status
+              </button>
+              <button
+                className="btn light sm"
+                onClick={() => {
                   setPerfMon(!perfMon)
                   toast(perfMon ? 'Performance monitor off' : 'Performance monitor on')
                 }}
               >
-                <Activity size={16} /> Toggle performance monitor ({perfMon ? 'ON' : 'OFF'})
+                <Activity size={16} /> Toggle 60fps monitor ({perfMon ? 'ON' : 'OFF'})
               </button>
-              <div className="glass tile" style={{ padding: '12px 14px' }}>
-                <Wifi size={20} color="var(--orange)" />
-                <span style={{ flex: 1, fontWeight: 700, fontSize: 13 }}>Simulate slow network</span>
-                <input
-                  type="checkbox"
-                  checked={fakeNet}
-                  onChange={e => {
-                    setFakeNet(e.target.checked)
-                    toast(e.target.checked ? 'Slow 3G network simulation enabled' : 'Normal network restored')
-                  }}
-                  style={{ width: 18, height: 18, accentColor: 'var(--orange)' }}
-                />
-              </div>
             </div>
           </div>
         </div>
@@ -201,4 +432,3 @@ export default function App() {
     </div>
   )
 }
-
